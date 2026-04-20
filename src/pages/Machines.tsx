@@ -1,0 +1,153 @@
+import { useEffect, useState } from "react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
+import Modal from "@/components/Modal";
+import SkeletonTable from "@/components/SkeletonTable";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
+
+type Machine = { id: string; machine_name: string; capacity: number; status: "available" | "busy"; current_order_id: string | null };
+type Order = { id: string; product_name: string };
+
+type MachineForm = { machine_name: string; capacity: number; status: "available" | "busy"; current_order_id: string | null };
+const empty: MachineForm = { machine_name: "", capacity: 1, status: "available", current_order_id: null };
+
+export default function Machines() {
+  const { isManager } = useAuth();
+  const [rows, setRows] = useState<Machine[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(false);
+  const [editing, setEditing] = useState<Machine | null>(null);
+  const [form, setForm] = useState(empty);
+  const [confirm, setConfirm] = useState<Machine | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    const [{ data: m }, { data: o }] = await Promise.all([
+      supabase.from("machines").select("*").order("created_at", { ascending: false }),
+      supabase.from("orders").select("id, product_name"),
+    ]);
+    setRows((m as Machine[]) ?? []);
+    setOrders((o as Order[]) ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const orderName = (id: string | null) => orders.find((x) => x.id === id)?.product_name ?? "—";
+
+  const openAdd = () => { setEditing(null); setForm(empty); setModal(true); };
+  const openEdit = (m: Machine) => {
+    setEditing(m);
+    setForm({ machine_name: m.machine_name, capacity: m.capacity, status: m.status, current_order_id: m.current_order_id });
+    setModal(true);
+  };
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = { ...form, current_order_id: form.current_order_id || null };
+    if (editing) {
+      const { error } = await supabase.from("machines").update(payload).eq("id", editing.id);
+      if (error) return toast.error(error.message);
+      toast.success("Machine updated");
+    } else {
+      const { error } = await supabase.from("machines").insert(payload);
+      if (error) return toast.error(error.message);
+      toast.success("Machine added");
+    }
+    setModal(false); load();
+  };
+
+  const remove = async () => {
+    if (!confirm) return;
+    const { error } = await supabase.from("machines").delete().eq("id", confirm.id);
+    if (error) return toast.error(error.message);
+    toast.success("Machine deleted"); setConfirm(null); load();
+  };
+
+  return (
+    <div>
+      <PageHeader title="Machines" subtitle="Manage factory equipment and capacity"
+        action={isManager && <button onClick={openAdd} className="btn-primary"><Plus size={16} /> Add Machine</button>} />
+
+      <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+        {loading ? <div className="p-4"><SkeletonTable cols={5} /></div> : rows.length === 0 ? (
+          <p className="p-10 text-center text-sm text-muted-foreground">No machines yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-secondary/50">
+                <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
+                  <th className="px-4 py-3">Machine ID</th><th className="px-4 py-3">Name</th><th className="px-4 py-3">Capacity</th>
+                  <th className="px-4 py-3">Status</th><th className="px-4 py-3">Current Order</th>
+                  {isManager && <th className="px-4 py-3 text-right">Actions</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((m, i) => (
+                  <tr key={m.id} className="border-t border-border table-row-anim hover:bg-secondary/30 transition-colors" style={{ animationDelay: `${i * 30}ms` }}>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{m.id.slice(0, 8)}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">{m.machine_name}</td>
+                    <td className="px-4 py-3">{m.capacity}</td>
+                    <td className="px-4 py-3"><span className={`badge badge-${m.status}`}>{m.status}</span></td>
+                    <td className="px-4 py-3 text-muted-foreground">{orderName(m.current_order_id)}</td>
+                    {isManager && (
+                      <td className="px-4 py-3 text-right">
+                        <div className="inline-flex gap-2">
+                          <button onClick={() => openEdit(m)} className="p-1.5 rounded-md hover:bg-secondary transition-colors"><Pencil size={15} /></button>
+                          <button onClick={() => setConfirm(m)} className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive transition-colors"><Trash2 size={15} /></button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <Modal open={modal} onClose={() => setModal(false)} title={editing ? "Edit Machine" : "Add Machine"}>
+        <form onSubmit={save} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">Machine Name</label>
+            <input required value={form.machine_name} onChange={(e) => setForm({ ...form, machine_name: e.target.value })} className="input-field" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold mb-1.5">Capacity</label>
+              <input type="number" min={1} required value={form.capacity} onChange={(e) => setForm({ ...form, capacity: +e.target.value })} className="input-field" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1.5">Status</label>
+              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as any })} className="input-field">
+                <option value="available">Available</option><option value="busy">Busy</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1.5">Current Order (optional)</label>
+            <select value={form.current_order_id ?? ""} onChange={(e) => setForm({ ...form, current_order_id: e.target.value || null })} className="input-field">
+              <option value="">None</option>
+              {orders.map((o) => <option key={o.id} value={o.id}>{o.product_name}</option>)}
+            </select>
+          </div>
+          <div className="flex gap-2 justify-end pt-2">
+            <button type="button" onClick={() => setModal(false)} className="btn-ghost">Cancel</button>
+            <button type="submit" className="btn-primary">{editing ? "Save Changes" : "Add Machine"}</button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={!!confirm} onClose={() => setConfirm(null)} title="Delete Machine">
+        <p className="text-sm text-muted-foreground mb-5">Delete machine <strong className="text-foreground">{confirm?.machine_name}</strong>?</p>
+        <div className="flex justify-end gap-2">
+          <button onClick={() => setConfirm(null)} className="btn-ghost">Cancel</button>
+          <button onClick={remove} className="btn-danger px-4 py-2.5">Delete</button>
+        </div>
+      </Modal>
+    </div>
+  );
+}
