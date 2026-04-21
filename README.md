@@ -3,7 +3,7 @@
 A full-stack web application designed to streamline production planning and scheduling workflows.
 Built with a focus on performance, scalability, and a clean user experience.
 
-🔗 **Live Demo:** https://prnvs7.github.io/factory/
+🔗 **Live Demo:** https://prnvs7.github.io/ProSched/
 
 ---
 
