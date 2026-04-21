@@ -69,8 +69,8 @@ factory/
 ### Clone the repo
 
 ```bash id="0z2hh4"
-git clone https://github.com/prnvs7/factory.git
-cd factory
+git clone https://github.com/prnvs7/ProSched.git
+cd ProSched
 ```
 
 ---
@@ -157,6 +157,8 @@ Any improvements, optimizations, or suggestions are welcome.
 ## 👨‍💻 Author
 
 **Pranav Singh**
+**Ritesh Kumar**
 GitHub: https://github.com/prnvs7
+GitHub: 
 
 ---
