@@ -9,7 +9,7 @@ Built with a focus on performance, scalability, and a clean user experience.
 
 ## 🧠 Overview
 
-This project was developed to simulate real-world factory operations — handling task scheduling, production flow, and basic workflow management through a responsive web interface.
+This project was developed to simulate real-world ProSched operations — handling task scheduling, production flow, and basic workflow management through a responsive web interface.
 
 It integrates a modern frontend with a backend-as-a-service approach, making it both lightweight and scalable.
 
@@ -49,7 +49,7 @@ It integrates a modern frontend with a backend-as-a-service approach, making it 
 ## 📁 Project Structure
 
 ```id="x8k3la"
-factory/
+ProSched/
 ├── src/
 │   ├── components/     # reusable UI components
 │   ├── pages/          # application views
@@ -125,7 +125,7 @@ The project is deployed using GitHub Pages with an automated CI/CD pipeline:
 * GitHub Pages requires this in `vite.config.js`:
 
 ```js id="m6rmh3"
-base: "/factory/"
+base: "/ProSched/"
 ```
 
 * If routing is used, prefer:
@@ -158,6 +158,7 @@ Any improvements, optimizations, or suggestions are welcome.
 
 **Pranav Singh**
 **Ritesh Kumar**
+**Mehakdeep Kaur**
 GitHub: https://github.com/prnvs7
 GitHub: 
 
