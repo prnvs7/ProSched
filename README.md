@@ -157,9 +157,10 @@ Any improvements, optimizations, or suggestions are welcome.
 ## 👨‍💻 Author
 
 **Pranav Singh**
-**Ritesh Kumar**
-**Mehakdeep Kaur**
 GitHub: https://github.com/prnvs7
-GitHub: 
+**Ritesh Kumar**
+GitHub: https://github.com/RiteshVerma1102
+**Mehakdeep Kaur**
+GitHub: https://github.com/mehakdeepkaurkhosa
 
 ---
