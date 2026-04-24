@@ -11,6 +11,11 @@ type Order = { id: string; product_name: string; quantity: number; priority: "hi
 type Machine = { id: string; machine_name: string; status: "available" | "busy"; current_order_id: string | null };
 
 const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
+const PRIORITY_GRADIENT: Record<string, string> = {
+  high: "linear-gradient(90deg, #ef4444, #ec4899)",
+  medium: "linear-gradient(90deg, #f97316, #eab308)",
+  low: "linear-gradient(90deg, #10b981, #06b6d4)",
+};
 
 export default function Schedule() {
   const { isManager } = useAuth();
@@ -66,6 +71,8 @@ export default function Schedule() {
 
   const today = new Date();
   const maxDays = Math.max(1, ...scheduled.map((o) => Math.max(1, differenceInDays(new Date(o.deadline), today))));
+  const pendingCount = orders.filter((o) => o.status === "pending").length;
+  const availableCount = machines.filter((m) => m.status === "available").length;
 
   return (
     <div>
@@ -80,36 +87,36 @@ export default function Schedule() {
         )}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      {/* Stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <div className="stat-card">
-          <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Pending Orders</div>
-          <div className="text-3xl font-bold text-foreground mt-1.5">{orders.filter((o) => o.status === "pending").length}</div>
+          <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: "rgba(255,255,255,0.4)" }}>Pending Orders</div>
+          <div className="text-3xl font-extrabold mt-1.5" style={{ color: "rgba(255,255,255,0.95)" }}>{pendingCount}</div>
         </div>
         <div className="stat-card">
-          <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Available Machines</div>
-          <div className="text-3xl font-bold text-foreground mt-1.5">{machines.filter((m) => m.status === "available").length}</div>
+          <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: "rgba(255,255,255,0.4)" }}>Available Machines</div>
+          <div className="text-3xl font-extrabold mt-1.5" style={{ color: "rgba(255,255,255,0.95)" }}>{availableCount}</div>
         </div>
       </div>
 
-      <div className="bg-card rounded-xl border border-border p-5 mb-6" style={{ boxShadow: "var(--shadow-card)" }}>
-        <h3 className="text-sm font-semibold text-foreground mb-4">Current Assignments</h3>
-        {loading ? <SkeletonTable cols={4} /> : scheduled.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-6 text-center">No active assignments. Click <strong>Auto Schedule</strong> to begin.</p>
+      {/* Assignments Table */}
+      <div className="stat-card !p-0 overflow-hidden mb-6" style={{ cursor: "default" }}>
+        <div className="px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <h3 className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.8)" }}>Current Assignments</h3>
+        </div>
+        {loading ? <div className="p-4"><SkeletonTable cols={4} /></div> : scheduled.length === 0 ? (
+          <p className="text-sm py-8 text-center" style={{ color: "rgba(255,255,255,0.35)" }}>No active assignments. Click <strong style={{ color: "#a78bfa" }}>Auto Schedule</strong> to begin.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
-                  <th className="py-2 pr-4">Order</th><th className="py-2 pr-4">Machine</th><th className="py-2 pr-4">Priority</th><th className="py-2">Deadline</th>
-                </tr>
-              </thead>
+            <table className="premium-table">
+              <thead><tr><th>Order</th><th>Machine</th><th>Priority</th><th>Deadline</th></tr></thead>
               <tbody>
                 {scheduled.map((o, i) => (
-                  <tr key={o.id} className="border-b border-border last:border-0 table-row-anim" style={{ animationDelay: `${i * 40}ms` }}>
-                    <td className="py-3 pr-4 font-medium text-foreground">{o.product_name}</td>
-                    <td className="py-3 pr-4">{machineName(o.assigned_machine_id)}</td>
-                    <td className="py-3 pr-4"><span className={`badge badge-${o.priority}`}>{o.priority}</span></td>
-                    <td className="py-3">{format(new Date(o.deadline), "MMM d, yyyy")}</td>
+                  <tr key={o.id} className="table-row-anim" style={{ animationDelay: `${i * 40}ms` }}>
+                    <td className="font-medium" style={{ color: "rgba(255,255,255,0.85)" }}>{o.product_name}</td>
+                    <td style={{ color: "rgba(255,255,255,0.6)" }}>{machineName(o.assigned_machine_id)}</td>
+                    <td><span className={`badge badge-${o.priority}`}>{o.priority}</span></td>
+                    <td style={{ color: "rgba(255,255,255,0.5)" }}>{format(new Date(o.deadline), "MMM d, yyyy")}</td>
                   </tr>
                 ))}
               </tbody>
@@ -118,24 +125,26 @@ export default function Schedule() {
         )}
       </div>
 
-      <div className="bg-card rounded-xl border border-border p-5" style={{ boxShadow: "var(--shadow-card)" }}>
-        <h3 className="text-sm font-semibold text-foreground mb-4">Timeline View</h3>
+      {/* Timeline View */}
+      <div className="stat-card" style={{ cursor: "default" }}>
+        <h3 className="text-sm font-semibold mb-5" style={{ color: "rgba(255,255,255,0.8)" }}>Timeline View</h3>
         {scheduled.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-6 text-center">No timeline data.</p>
+          <p className="text-sm py-6 text-center" style={{ color: "rgba(255,255,255,0.35)" }}>No timeline data.</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {scheduled.map((o, i) => {
               const days = Math.max(1, differenceInDays(new Date(o.deadline), today));
-              const widthPct = Math.min(100, Math.max(8, (days / maxDays) * 100));
-              const color = o.priority === "high" ? "hsl(0 75% 55%)" : o.priority === "medium" ? "hsl(38 92% 50%)" : "hsl(145 63% 42%)";
+              const widthPct = Math.min(100, Math.max(12, (days / maxDays) * 100));
               return (
                 <div key={o.id} className="table-row-anim" style={{ animationDelay: `${i * 50}ms` }}>
-                  <div className="flex justify-between text-xs mb-1.5">
-                    <span className="font-medium text-foreground">{o.product_name} <span className="text-muted-foreground">→ {machineName(o.assigned_machine_id)}</span></span>
-                    <span className="text-muted-foreground">{days}d to deadline</span>
+                  <div className="flex justify-between text-xs mb-2">
+                    <span className="font-medium" style={{ color: "rgba(255,255,255,0.85)" }}>
+                      {o.product_name} <span style={{ color: "rgba(255,255,255,0.35)" }}>→ {machineName(o.assigned_machine_id)}</span>
+                    </span>
+                    <span style={{ color: "rgba(255,255,255,0.4)" }}>{days}d to deadline</span>
                   </div>
-                  <div className="h-3 bg-secondary rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-700" style={{ width: `${widthPct}%`, background: color }} />
+                  <div className="h-3 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.04)" }}>
+                    <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${widthPct}%`, background: PRIORITY_GRADIENT[o.priority] }} />
                   </div>
                 </div>
               );

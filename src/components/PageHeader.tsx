@@ -4,8 +4,14 @@ export default function PageHeader({ title, subtitle, action }: { title: string;
   return (
     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{title}</h1>
-        {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "rgba(255,255,255,0.95)" }}>
+          {title}
+        </h1>
+        {subtitle && (
+          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>
+            {subtitle}
+          </p>
+        )}
       </div>
       {action}
     </div>

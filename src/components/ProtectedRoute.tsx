@@ -8,6 +8,6 @@ export default function ProtectedRoute({ children }: { children: JSX.Element }) 
       <div className="w-10 h-10 rounded-full border-4 border-accent/30 border-t-accent animate-spin" />
     </div>
   );
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/landing" replace />;
   return children;
 }
