@@ -78,6 +78,10 @@ cd ProSched
 ### Install dependencies
 
 ```bash id="y92v8j"
+npm install react react-dom
+npm install @supabase/supabase-js
+npm install -D vite
+npm install -D eslint
 npm install
 ```
 
