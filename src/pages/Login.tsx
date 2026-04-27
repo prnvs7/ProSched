@@ -168,7 +168,7 @@ export default function Login() {
                     <input type="checkbox" className="login-checkbox" />
                     <span>Remember me</span>
                   </label>
-                  <button type="button" className="login-forgot">
+                  <button type="button" onClick={() => navigate("/forgot-password")} className="login-forgot">
                     Forgot password?
                   </button>
                 </div>
