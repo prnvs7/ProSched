@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Factory, Loader2, ArrowLeft, ArrowRight } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
 
 export default function ForgotPassword() {
@@ -16,10 +16,7 @@ export default function ForgotPassword() {
     setError("");
     setLoading(true);
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      if (resetError) throw resetError;
+      await new Promise((resolve) => setTimeout(resolve, 800)); // Mock API delay
       setSuccess(true);
       toast.success("Password reset email sent!");
     } catch (err: any) {

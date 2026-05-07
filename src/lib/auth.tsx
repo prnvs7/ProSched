@@ -1,8 +1,17 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "./api";
 
 type Role = "manager" | "worker";
+
+export interface User {
+  id: string;
+  email: string;
+  role: Role;
+}
+
+interface Session {
+  access_token: string;
+}
 
 interface AuthCtx {
   user: User | null;
@@ -10,6 +19,7 @@ interface AuthCtx {
   role: Role | null;
   loading: boolean;
   isManager: boolean;
+  signIn: (token: string, userData: User) => void;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<void>;
 }
@@ -22,35 +32,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchRole = async (uid: string) => {
-    const { data } = await supabase.from("user_roles").select("role").eq("user_id", uid).maybeSingle();
-    setRole((data?.role as Role) ?? null);
-  };
-
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) {
-        setTimeout(() => fetchRole(s.user.id), 0);
-      } else {
-        setRole(null);
+    const initAuth = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const res = await api.get('/auth/me');
+          setSession({ access_token: token });
+          setUser(res.user);
+          setRole(res.user.role);
+        } catch (err) {
+          console.error("Failed to fetch user", err);
+          localStorage.removeItem("token");
+          setSession(null);
+          setUser(null);
+          setRole(null);
+        }
       }
-    });
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) fetchRole(s.user.id).finally(() => setLoading(false));
-      else setLoading(false);
-    });
-    return () => sub.subscription.unsubscribe();
+      setLoading(false);
+    };
+    initAuth();
   }, []);
 
-  const signOut = async () => { await supabase.auth.signOut(); };
-  const refreshRole = async () => { if (user) await fetchRole(user.id); };
+  const signIn = (token: string, userData: User) => {
+    localStorage.setItem("token", token);
+    setSession({ access_token: token });
+    setUser(userData);
+    setRole(userData.role);
+  };
+
+  const signOut = async () => {
+    localStorage.removeItem("token");
+    setSession(null);
+    setUser(null);
+    setRole(null);
+  };
+
+  const refreshRole = async () => {
+    if (user) {
+      try {
+        const res = await api.get('/auth/me');
+        setUser(res.user);
+        setRole(res.user.role);
+      } catch (err) {
+        console.error("Failed to refresh role");
+      }
+    }
+  };
 
   return (
-    <Ctx.Provider value={{ user, session, role, loading, isManager: role === "manager", signOut, refreshRole }}>
+    <Ctx.Provider value={{ user, session, role, loading, isManager: role === "manager", signIn, signOut, refreshRole }}>
       {children}
     </Ctx.Provider>
   );

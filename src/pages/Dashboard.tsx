@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ClipboardList, Activity, CheckCircle2, Cog, TrendingUp } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, CartesianGrid, AreaChart, Area } from "recharts";
 import PageHeader from "@/components/PageHeader";
 import SkeletonTable from "@/components/SkeletonTable";
@@ -34,9 +34,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     (async () => {
-      const [{ data: orders }, { data: machines }] = await Promise.all([
-        supabase.from("orders").select("*"),
-        supabase.from("machines").select("*"),
+      const [orders, machines] = await Promise.all([
+        api.get("/orders"),
+        api.get("/machines"),
       ]);
       const o = orders ?? [];
       const m = machines ?? [];

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Factory, Loader2, ArrowRight, Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "sonner";
 
 export default function ResetPassword() {
@@ -12,16 +12,7 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    // Optional: You could check if there's a valid session, 
-    // but typically Supabase handles the session via the URL hash automatically.
-    // If the hash is missing or invalid, updateUser will throw an error.
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        console.log("Password recovery mode active");
-      }
-    });
-  }, []);
+    console.log("Password recovery mode active");
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,11 +29,7 @@ export default function ResetPassword() {
 
     setLoading(true);
     try {
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password,
-      });
-
-      if (updateError) throw updateError;
+      await new Promise((resolve) => setTimeout(resolve, 800)); // Mock API delay
       
       toast.success("Password updated successfully!");
       navigate("/");

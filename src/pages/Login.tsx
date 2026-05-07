@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { Factory, Loader2, ArrowRight, Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 
 export default function Login() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signIn } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -24,19 +24,13 @@ export default function Login() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error: e1 } = await supabase.auth.signUp({
-          email, password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-            data: { role },
-          },
-        });
-        if (e1) throw e1;
+        const res = await api.post('/auth/register', { email, password, role });
+        signIn(res.token, res.user);
         toast.success("Account created! Welcome aboard.");
         navigate("/");
       } else {
-        const { error: e2 } = await supabase.auth.signInWithPassword({ email, password });
-        if (e2) throw e2;
+        const res = await api.post('/auth/login', { email, password });
+        signIn(res.token, res.user);
         toast.success("Welcome back");
         navigate("/");
       }

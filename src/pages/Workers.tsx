@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import SkeletonTable from "@/components/SkeletonTable";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 
@@ -31,12 +31,12 @@ export default function Workers() {
 
   const load = async () => {
     setLoading(true);
-    const [{ data: w }, { data: m }] = await Promise.all([
-      supabase.from("workers").select("*").order("created_at", { ascending: false }),
-      supabase.from("machines").select("id, machine_name"),
+    const [w, m] = await Promise.all([
+      api.get("/workers"),
+      api.get("/machines"),
     ]);
-    setRows((w as Worker[]) ?? []);
-    setMachines((m as Machine[]) ?? []);
+    setRows(w ?? []);
+    setMachines(m ?? []);
     setLoading(false);
   };
 
@@ -54,29 +54,36 @@ export default function Workers() {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = { ...form, assigned_machine_id: form.assigned_machine_id || null };
-    if (editing) {
-      const { error } = await supabase.from("workers").update(payload).eq("id", editing.id);
-      if (error) return toast.error(error.message);
-      toast.success("Worker updated");
-    } else {
-      const { error } = await supabase.from("workers").insert(payload);
-      if (error) return toast.error(error.message);
-      toast.success("Worker added");
+    try {
+      if (editing) {
+        await api.put(`/workers/${editing.id}`, payload);
+        toast.success("Worker updated");
+      } else {
+        await api.post("/workers", payload);
+        toast.success("Worker added");
+      }
+    } catch (err: any) {
+      return toast.error(err.message);
     }
     setModal(false); load();
   };
 
   const toggleAvailable = async (w: Worker) => {
-    const { error } = await supabase.from("workers").update({ is_available: !w.is_available }).eq("id", w.id);
-    if (error) return toast.error(error.message);
-    load();
+    try {
+      await api.put(`/workers/${w.id}`, { is_available: !w.is_available });
+      load();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
-
   const remove = async () => {
     if (!confirm) return;
-    const { error } = await supabase.from("workers").delete().eq("id", confirm.id);
-    if (error) return toast.error(error.message);
-    toast.success("Worker deleted"); setConfirm(null); load();
+    try {
+      await api.delete(`/workers/${confirm.id}`);
+      toast.success("Worker deleted"); setConfirm(null); load();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   return (

@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import SkeletonTable from "@/components/SkeletonTable";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { format } from "date-fns";
@@ -31,9 +31,12 @@ export default function Orders() {
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
-    if (error) toast.error(error.message);
-    setRows((data as Order[]) ?? []);
+    try {
+      const data = await api.get("/orders");
+      setRows(data ?? []);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
     setLoading(false);
   };
 
@@ -48,14 +51,16 @@ export default function Orders() {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editing) {
-      const { error } = await supabase.from("orders").update(form).eq("id", editing.id);
-      if (error) return toast.error(error.message);
-      toast.success("Order updated");
-    } else {
-      const { error } = await supabase.from("orders").insert(form);
-      if (error) return toast.error(error.message);
-      toast.success("Order created");
+    try {
+      if (editing) {
+        await api.put(`/orders/${editing.id}`, form);
+        toast.success("Order updated");
+      } else {
+        await api.post("/orders", form);
+        toast.success("Order created");
+      }
+    } catch (err: any) {
+      return toast.error(err.message);
     }
     setModal(false);
     load();
@@ -63,9 +68,12 @@ export default function Orders() {
 
   const remove = async () => {
     if (!confirm) return;
-    const { error } = await supabase.from("orders").delete().eq("id", confirm.id);
-    if (error) return toast.error(error.message);
-    toast.success("Order deleted");
+    try {
+      await api.delete(`/orders/${confirm.id}`);
+      toast.success("Order deleted");
+    } catch (err: any) {
+      return toast.error(err.message);
+    }
     setConfirm(null);
     load();
   };

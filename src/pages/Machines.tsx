@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import SkeletonTable from "@/components/SkeletonTable";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 
@@ -25,12 +25,16 @@ export default function Machines() {
 
   const load = async () => {
     setLoading(true);
-    const [{ data: m }, { data: o }] = await Promise.all([
-      supabase.from("machines").select("*").order("created_at", { ascending: false }),
-      supabase.from("orders").select("id, product_name"),
-    ]);
-    setRows((m as Machine[]) ?? []);
-    setOrders((o as Order[]) ?? []);
+    try {
+      const [m, o] = await Promise.all([
+        api.get("/machines"),
+        api.get("/orders"),
+      ]);
+      setRows(m ?? []);
+      setOrders(o ?? []);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
     setLoading(false);
   };
 
@@ -48,23 +52,28 @@ export default function Machines() {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = { ...form, current_order_id: form.current_order_id || null };
-    if (editing) {
-      const { error } = await supabase.from("machines").update(payload).eq("id", editing.id);
-      if (error) return toast.error(error.message);
-      toast.success("Machine updated");
-    } else {
-      const { error } = await supabase.from("machines").insert(payload);
-      if (error) return toast.error(error.message);
-      toast.success("Machine added");
+    try {
+      if (editing) {
+        await api.put(`/machines/${editing.id}`, payload);
+        toast.success("Machine updated");
+      } else {
+        await api.post("/machines", payload);
+        toast.success("Machine added");
+      }
+    } catch (err: any) {
+      return toast.error(err.message);
     }
     setModal(false); load();
   };
 
   const remove = async () => {
     if (!confirm) return;
-    const { error } = await supabase.from("machines").delete().eq("id", confirm.id);
-    if (error) return toast.error(error.message);
-    toast.success("Machine deleted"); setConfirm(null); load();
+    try {
+      await api.delete(`/machines/${confirm.id}`);
+      toast.success("Machine deleted"); setConfirm(null); load();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   return (

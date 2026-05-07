@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Download, TrendingUp, Calendar } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -32,10 +32,10 @@ export default function Reports() {
 
   useEffect(() => {
     (async () => {
-      const [{ data: o }, { data: m }, { data: w }] = await Promise.all([
-        supabase.from("orders").select("*"),
-        supabase.from("machines").select("*"),
-        supabase.from("workers").select("*"),
+      const [o, m, w] = await Promise.all([
+        api.get("/orders"),
+        api.get("/machines"),
+        api.get("/workers"),
       ]);
       const O = o ?? []; const M = m ?? []; const W = w ?? [];
       setOrders(O);

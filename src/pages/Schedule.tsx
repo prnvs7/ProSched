@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Zap, Loader2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import SkeletonTable from "@/components/SkeletonTable";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { differenceInDays, format } from "date-fns";
@@ -26,12 +26,12 @@ export default function Schedule() {
 
   const load = async () => {
     setLoading(true);
-    const [{ data: o }, { data: m }] = await Promise.all([
-      supabase.from("orders").select("*"),
-      supabase.from("machines").select("*"),
+    const [o, m] = await Promise.all([
+      api.get("/orders"),
+      api.get("/machines"),
     ]);
-    setOrders((o as Order[]) ?? []);
-    setMachines((m as Machine[]) ?? []);
+    setOrders(o ?? []);
+    setMachines(m ?? []);
     setLoading(false);
   };
 
@@ -54,8 +54,8 @@ export default function Schedule() {
       const pairs = pending.slice(0, available.length).map((o, i) => ({ order: o, machine: available[i] }));
 
       for (const { order, machine } of pairs) {
-        await supabase.from("orders").update({ status: "in-progress", assigned_machine_id: machine.id }).eq("id", order.id);
-        await supabase.from("machines").update({ status: "busy", current_order_id: order.id }).eq("id", machine.id);
+        await api.put(`/orders/${order.id}`, { status: "in-progress", assigned_machine_id: machine.id });
+        await api.put(`/machines/${machine.id}`, { status: "busy", current_order_id: order.id });
       }
       toast.success(`⚡ Scheduled ${pairs.length} order${pairs.length > 1 ? "s" : ""}`);
       load();
